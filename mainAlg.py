@@ -1,6 +1,7 @@
 import numpy as np
 
 from numpy import kron as tensProd
+from utilities import newtonsMethod_BinaryEntropy
 
 
 def flatten_AndDetype(aList):
@@ -62,7 +63,7 @@ def checkIsValidEntVec_2N(v):
     return(isValid)
 
 
-def reconstIntegerVec_2N(v):
+def reconstEntVec_2N(v):
     '''
     Input: 
         v: A vector of non-negative integer values
@@ -147,36 +148,92 @@ def vCoeffs2DensityOperator_2N(vCoeffs):
     curBitCount = 0
 
     if(vCoeffs[0] > 0):
-        u1DensRepeated = repeatedTensorProd(dMat=u1DensMat, k=vCoeffs[0])
-        densMat = tensProd(densMat, u1DensRepeated)
+        intCoeff_u1 = np.floor(vCoeffs[0]).astype(int)
+        if(intCoeff_u1 > 0):
+            u1DensRepeated = repeatedTensorProd(dMat=u1DensMat, k=intCoeff_u1)
+            densMat = tensProd(densMat, u1DensRepeated)
 
-        # Updating the labels of the A systems and B systems based on the tensor products
-        aBits.append([curBitCount + 2*i for i in range(vCoeffs[0])])
-        bBits.append([curBitCount + 2*i + 1 for i in range(vCoeffs[0])])
-        curBitCount = curBitCount + (2*vCoeffs[0])
+            # Updating the labels of the A systems and B systems based on the tensor products
+            aBits.append([curBitCount + 2*i for i in range(intCoeff_u1)])
+            bBits.append([curBitCount + 2*i + 1 for i in range(intCoeff_u1)])
+            curBitCount = curBitCount + (2*intCoeff_u1)
+        if(not np.isclose(intCoeff_u1, vCoeffs[0])):
+            # If the coefficient is not an integer,
+            # then we add extra bits to the system to match the non-integer portion
+            remainder = vCoeffs[0] - intCoeff_u1 # Should be a number in (0,1)
+            alpha = newtonsMethod_BinaryEntropy(r=remainder)
+
+            partial_u1DensMat = np.matrix([[alpha, 0, 0, np.sqrt(alpha * (1-alpha))], [0,0,0,0], [0,0,0,0], [np.sqrt(alpha * (1-alpha)),0,0,1-alpha]])
+            densMat = tensProd(densMat, partial_u1DensMat)
+            aBits.append([curBitCount])
+            bBits.append([curBitCount+1])
+            curBitCount = curBitCount + 2
+
+
 
     if(vCoeffs[1] > 0):
-        u2DensRepeated = repeatedTensorProd(dMat=u2DenseMat, k=vCoeffs[1])
-        densMat = tensProd(densMat, u2DensRepeated)
-        # Since u2 corresponds to a state on B, but A being degenerate, we only need to update B
-        bBits.append([curBitCount + i for i in range(vCoeffs[1])])
-        curBitCount = curBitCount + vCoeffs[1]
+        intCoeff_u2 = np.floor(vCoeffs[1]).astype(int)
+        if(intCoeff_u2 > 0):
+            u2DensRepeated = repeatedTensorProd(dMat=u2DenseMat, k=intCoeff_u2)
+            densMat = tensProd(densMat, u2DensRepeated)
+            # Since u2 corresponds to a state on B, but A being degenerate, we only need to update B
+            bBits.append([curBitCount + i for i in range(intCoeff_u2)])
+            curBitCount = curBitCount + intCoeff_u2
+
+        if(not np.isclose(intCoeff_u2, vCoeffs[1])):
+            # If the coefficient is not an integer,
+            # then we add an extra bit to the system to match the non-integer portion
+            remainder = vCoeffs[1] - intCoeff_u2 # Should be a number in (0,1)
+            alpha = newtonsMethod_BinaryEntropy(r=remainder)
+
+            partial_u2DensMat = np.matrix([[alpha, 0], [0, 1-alpha]])
+            densMat = tensProd(densMat, partial_u2DensMat)
+            bBits.append([curBitCount])
+            curBitCount = curBitCount + 1
 
     if(vCoeffs[2] > 0):
-        u3DensRepeated = repeatedTensorProd(dMat=u3DenseMat, k=vCoeffs[2])
-        densMat = tensProd(densMat, u3DensRepeated)
-        # Since u3 corresponds to a state on A, but B being degenerate, we only need to update A
-        aBits.append([curBitCount + i for i in range(vCoeffs[2])])
-        curBitCount = curBitCount + vCoeffs[2]
+        intCoeff_u3 = np.floor(vCoeffs[2]).astype(int)
+        if(intCoeff_u3 > 0):
+            u3DensRepeated = repeatedTensorProd(dMat=u3DenseMat, k=intCoeff_u3)
+            densMat = tensProd(densMat, u3DensRepeated)
+            # Since u3 corresponds to a state on A, but B being degenerate, we only need to update A
+            aBits.append([curBitCount + i for i in range(intCoeff_u3)])
+            curBitCount = curBitCount + intCoeff_u3
+        if(not np.isclose(intCoeff_u3, vCoeffs[2]) ):
+            # If the coefficient is not an integer,
+            # then we add an extra bit to the system to match the non-integer portion
+            remainder = vCoeffs[2] - intCoeff_u3 # Should be a number in (0,1)
+            alpha = newtonsMethod_BinaryEntropy(r=remainder)
+
+            partial_u3DensMat = np.matrix([[alpha, 0], [0, 1-alpha]])
+            densMat = tensProd(densMat, partial_u3DensMat)
+            aBits.append([curBitCount])
+            curBitCount = curBitCount + 1
     
     if(vCoeffs[3] > 0):
-        u4DensRepeated = repeatedTensorProd(dMat=u4DenseMat, k=vCoeffs[3])
-        densMat = tensProd(densMat, u4DensRepeated)
+        intCoeff_u4 = np.floor(vCoeffs[3]).astype(int)
+        if(intCoeff_u4 > 0):
+            u4DensRepeated = repeatedTensorProd(dMat=u4DenseMat, k=intCoeff_u4)
+            densMat = tensProd(densMat, u4DensRepeated)
 
-        # Updating the labels of the A systems and B systems based on the tensor products
-        aBits.append([curBitCount + 2*i for i in range(vCoeffs[3])])
-        bBits.append([curBitCount + 2*i + 1 for i in range(vCoeffs[3])])
-        curBitCount = curBitCount + (2*vCoeffs[3])
+            # Updating the labels of the A systems and B systems based on the tensor products
+            aBits.append([curBitCount + 2*i for i in range(intCoeff_u4)])
+            bBits.append([curBitCount + 2*i + 1 for i in range(intCoeff_u4)])
+            curBitCount = curBitCount + (2*intCoeff_u4)
+
+        if(not np.isclose(intCoeff_u4, vCoeffs[3])):
+            # If the coefficient is not an integer,
+            # then we add an extra bit to the system to match the non-integer portion
+            remainder = vCoeffs[3] - intCoeff_u4 # Should be a number in (0,1)
+            alpha = newtonsMethod_BinaryEntropy(r=remainder)
+
+            partial_u4DensMat = np.matrix([[alpha, 0, 0, 0], [0,0,0,0], [0,0,0,0], [0,0,0,1-alpha]])
+
+            densMat = tensProd(densMat, partial_u4DensMat)
+            aBits.append([curBitCount])
+            bBits.append([curBitCount+1])
+            curBitCount = curBitCount + 2
+            
     
     aBitsFlat = flatten_AndDetype(aBits)
     bBitsFlat = flatten_AndDetype(bBits)
@@ -187,7 +244,7 @@ def vCoeffs2DensityOperator_2N(vCoeffs):
 
 
 
-def entVec2DenseMat_Int2N(entVec, entVecOrdering):
+def entVec2DenseMat_2N(entVec, entVecOrdering):
     '''
     Function that maps a non-negative valued entropy vector and its ordering,
     into a density matrix with the exact same entropy vector
@@ -199,9 +256,9 @@ def entVec2DenseMat_Int2N(entVec, entVecOrdering):
 
     reorderedEntVec = convertBetweenEntVecOrderings(entVec=entVec, curOrdering=entVecOrdering, targOrdering=correctOrdering)
 
-    vHat, vCoeffs = reconstIntegerVec_2N(v=reorderedEntVec)
+    vHat, vCoeffs = reconstEntVec_2N(v=reorderedEntVec)
 
-    if(not np.array_equal(vHat, reorderedEntVec)):
+    if(not np.allclose(vHat, reorderedEntVec)):
         raise Exception("The reordered entropy vector and the reconstructed entropy vector differ")
     
 
@@ -219,10 +276,10 @@ if(__name__ == "__main__"):
     from entropyVectorAlgorithms import entropyVector_MixedState, entropyVector_PureState
     from utilities import purifyMixedState
     
-    testEntVec = np.array([2,2,3])
+    testEntVec = np.array([1.1, 1, 2])
     curBitOrdering = [0, 1, [0,1]]
 
-    testDensMat, bitPartitions_MS = entVec2DenseMat_Int2N(entVec=testEntVec, entVecOrdering=curBitOrdering)
+    testDensMat, bitPartitions_MS = entVec2DenseMat_2N(entVec=testEntVec, entVecOrdering=curBitOrdering)
 
     # Computing the entropy vector for the generated density matrix to make sure it matches the 
     # original entropy vector

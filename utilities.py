@@ -138,7 +138,7 @@ def h(x, base=2):
 
 def vnEntropy(densityMat):
 
-    eigVals, _ = np.linalg.eigh(densityMat)
+    eigVals, _ = scp.linalg.eig(densityMat)
 
     entropyTotal = 0
     for eigVal in eigVals:
@@ -282,39 +282,70 @@ def partialTrace_TargBits(targDensityMat, bitsToTraceOut, mode="np", indexing=1)
     return(reducedDensityMat)
 
 
-def purifyMixedState(densityMat):
+def purifyMixedState(densityMat, needsComplex=True):
 
 
     d = densityMat.shape[0]
 
-    eigVals, eigVecs = np.linalg.eigh(np.matrix(densityMat))
+    eigVals, eigVecs = scp.linalg.eig(np.matrix(densityMat))
 
-    targPureState = np.zeros(shape=(d**2,1), dtype=complex)
+    if(needsComplex):
+        targPureState = np.zeros(shape=(d**2,1))
+    else:
+        targPureState = np.zeros(shape=(d**2,1), dtype=complex)
 
     for eInd in range(eigVals.shape[0]):
-        targEigVal = eigVals[eInd]
-        targEigVec = eigVecs[:,eInd]
+        targEigVal = np.real(eigVals[eInd])
 
-        doubledEVec = math.sqrt(targEigVal) * np.kron(targEigVec, targEigVec)
+        # If the eigenvalue is close to 0, then we assume its 0
+        if not (np.isclose(targEigVal, 0)):
+            targEigVec = eigVecs[:,eInd]
+            doubledEVec = math.sqrt(targEigVal) * np.kron(targEigVec, targEigVec)
 
-        targPureState = targPureState + doubledEVec
+            targPureState = targPureState + doubledEVec.reshape(-1,1)
 
     return(targPureState)
 
 
-def newtonsMethod_EntropyFunctional(d, r):
+def newtonsMethod_BinaryEntropy(r, tol=-1):
     """
-    Nevermind, I got Newtons method working
-    
-    :param d: dimension
+    Implementing Newtons (Halley's) method to estimate the inverse of the binary entropy functional
+
     :param r: remainder
+    :param tol: tolerance in the Newtons method approximation. Defaults to -1, which uses the default argument of scipy
+    """
+    entFunc = lambda x : h(x) + h(1 - x) - r
+    entFuncDeriv = lambda x : math.log2((1-x)/x)
+    entFuncSecondDeriv = lambda x: -1 * (1/math.log(2)) * (1/(x * (1-x)))
+
+    midpoint = r
+    # Since we're using the first and second derivative, this is technically Halley's method?
+    if(tol == -1):
+        newtonResult = scp.optimize.newton(func=entFunc, x0=midpoint, fprime=entFuncDeriv, fprime2=entFuncSecondDeriv)
+    else:
+        newtonResult = scp.optimize.newton(func=entFunc, x0=midpoint, fprime=entFuncDeriv, fprime2=entFuncSecondDeriv, tol=tol)
+
+    return(newtonResult)
+
+
+def newtonsMethod_EntropyFunctional(r, d=2, tol=-1):
+    """
+    Implementing Newtons (Halley's) method to estimate the inverse of the entropy functional
+
+    :param r: remainder
+    :param d: dimension, defaults to 2
+    :param tol: tolerance in the Newtons method approximation. Defaults to -1, which uses the default argument of scipy
     """
     entFunc = lambda x : h(x) + h((2/d) - x) - r
     entFuncDeriv = lambda x : math.log2((2/(d*x)) - 1)
-
+    entFuncSecondDeriv = lambda x: -1 * (1/math.log(2)) * (1/(x * (1-x)))
+    
     midpoint = 3 / (2*d)
-
-    newtonResult = scp.optimize.newton(func=entFunc, x0=midpoint, fprime=entFuncDeriv)
+    # Since we're using the first and second derivative, this is technically Halley's method?
+    if(tol == -1):
+        newtonResult = scp.optimize.newton(func=entFunc, x0=midpoint, fprime=entFuncDeriv, fprime2=entFuncSecondDeriv)
+    else:
+        newtonResult = scp.optimize.newton(func=entFunc, x0=midpoint, fprime=entFuncDeriv, fprime2=entFuncSecondDeriv, tol=tol)
 
     return(newtonResult)
 
