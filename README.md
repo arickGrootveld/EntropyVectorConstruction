@@ -11,7 +11,9 @@ with three partitions.
 
 - 'utilities.py' contains a bunch of extra functions. Some stuff should be added, and some stuff should be removed from this (namely, fpylll is only needed for the approximation method for arbitary partitions)
 
-- 'mainAlg.py' implements the three partition version of the algorithm
+- 'threePartitionAlg.py' implements the three partition version of the algorithm
 
-- 'entropyVectorAlgorithms.py' contains more algorithms for constructing a state to match an entropy vector, along with classes that standardize entropy vectors. The two most interesting algorithms in here: one generates a mixed state with a specified entropy in the smallest possible number of dimensions, and the other approximates a target entropy vector using integer combinations of a set of basis entropy vectors using a lattice shortest vector algorithm. 
+- 'entropyVectorAlgorithms.py' contains more algorithms for constructing a state to match an entropy vector, along with classes that standardize entropy vectors. The two most interesting algorithms in here: one generates a mixed state with a specified entropy in the smallest possible number of dimensions, and the other approximates a target entropy vector using integer combinations of a set of basis entropy vectors using a lattice shortest vector algorithm.
+
+- 'mixedIntegerApprox.py' has an implementation of a mixed integer quadratic program to approximate a given entropy vector from a collection of given states
 
