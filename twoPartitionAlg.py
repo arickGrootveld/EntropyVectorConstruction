@@ -76,7 +76,6 @@ def reconstEntVec_2N(v):
                 this will be all -1's
     '''
 
-
     isValidEntVec = checkIsValidEntVec_2N(v)
 
     if(not isValidEntVec):
